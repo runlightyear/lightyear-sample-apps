@@ -8,6 +8,15 @@ import { prisma } from "~/db.server";
 import { useLoaderData } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { requireUserId } from "~/session.server";
+import {
+  Table,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableCell,
+  TableBody,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 
 export const meta: MetaFunction = () => {
   return [
@@ -90,28 +99,34 @@ export default function Index() {
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
       {data.user.email} <a href="/logout">Logout</a>
       <h1>Tasks</h1>
-      <ul>
-        {data.tasks.map((task) => (
-          <li key={task.id} style={{ display: "flex", gap: 10 }}>
-            <Form method="patch">
-              <input hidden name="completed" defaultValue={task.id} />
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={handleCheck(task.id, task.completed)}
-              />
-            </Form>
-
-            <a href={`/tasks/${task.id}`}>{task.title}</a>
-
-            <Form method="delete">
-              <input hidden name="delete" defaultValue={task.id} />
-              <button type="submit">X</button>
-            </Form>
-          </li>
-        ))}
-      </ul>
-      <a href="/tasks/new">New Task</a>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[50px] text-right">Status</TableHead>
+            <TableHead>Title</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.tasks.map((task) => (
+            <TableRow>
+              <TableCell>
+                <Form method="patch" className="text-center">
+                  <input hidden name="completed" defaultValue={task.id} />
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={handleCheck(task.id, task.completed)}
+                  />
+                </Form>
+              </TableCell>
+              <TableCell key={task.id}>{task.title}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <Button asChild>
+        <a href="/tasks/new">New Task</a>
+      </Button>
       <Outlet />
     </div>
   );

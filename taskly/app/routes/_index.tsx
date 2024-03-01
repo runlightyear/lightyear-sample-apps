@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { json, LoaderFunctionArgs, type MetaFunction } from "@remix-run/node";
 import { requireUserId } from "~/session.server";
 
@@ -17,11 +18,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function Index() {
   return (
     <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      <h1>Welcome to Remix</h1>
-
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+        Welcome to Taskly
+      </h1>
       <ul>
         <li>
-          <a href="/tasks">Tasks</a>
+          <Button asChild>
+            <a href="/tasks">Tasks</a>
+          </Button>
         </li>
       </ul>
     </div>
