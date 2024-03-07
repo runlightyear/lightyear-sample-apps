@@ -46,3 +46,11 @@ Questions
 
 - How many objects can be synced per user?
 - How are sync conflicts handled?
+
+Sync algorithm
+
+External app
+Collection
+Product
+
+1. Sync from external app to collection

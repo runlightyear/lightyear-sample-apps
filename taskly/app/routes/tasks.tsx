@@ -17,6 +17,9 @@ import {
   TableBody,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { TopNav } from "~/components/TopNav";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const meta: MetaFunction = () => {
   return [
@@ -33,7 +36,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 
   const tasks = await prisma.task.findMany({ where: { userId } });
-  return json({ user: { email: user.email }, tasks });
+  return json({ user: { initials: user.initials, email: user.email }, tasks });
 }
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -88,45 +91,40 @@ export default function Index() {
   const submit = useSubmit();
 
   const handleCheck =
-    (taskId: number, currentlyCompleted: boolean) =>
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    (taskId: number, currentlyCompleted: boolean) => async (event: boolean) => {
       console.log("got a check", taskId);
 
       submit({ taskId, completed: !currentlyCompleted }, { method: "patch" });
     };
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8" }}>
-      {data.user.email} <a href="/logout">Logout</a>
-      <h1>Tasks</h1>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px] text-right">Status</TableHead>
-            <TableHead>Title</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.tasks.map((task) => (
-            <TableRow>
-              <TableCell>
-                <Form method="patch" className="text-center">
-                  <input hidden name="completed" defaultValue={task.id} />
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={handleCheck(task.id, task.completed)}
-                  />
-                </Form>
-              </TableCell>
-              <TableCell key={task.id}>{task.title}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Button asChild>
-        <a href="/tasks/new">New Task</a>
-      </Button>
+    <div className="grid grid-cols-1 max-h-screen gap-4">
+      <TopNav selected={"tasks"} user={{ initials: "AB" }} />
+      <ScrollArea className="border rounded-md max-h-[800px]">
+        <Table>
+          <TableBody>
+            {data.tasks.map((task) => (
+              <TableRow>
+                <TableCell className="w-[50px] text-right">
+                  <Form method="patch" className="text-center flex">
+                    <input hidden name="completed" defaultValue={task.id} />
+                    <Checkbox
+                      checked={task.completed}
+                      onCheckedChange={handleCheck(task.id, task.completed)}
+                    />
+                  </Form>
+                </TableCell>
+                <TableCell key={task.id}>{task.title}</TableCell>
+                <TableCell className="w-[50px]">...</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+
+      {/* <Button asChild>
+          <a href="/tasks/new">New Task</a>
+        </Button> */}
       <Outlet />
     </div>
   );
