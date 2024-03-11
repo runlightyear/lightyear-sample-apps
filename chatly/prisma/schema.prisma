@@ -11,33 +11,61 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  leads     Lead[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  people    Person[]
+  threads   Thread[]
+  messages  Message[]
   notes     Note[]
 }
 
-model Lead {
-  id        Int      @id @default(autoincrement())
-  owner     User     @relation(fields: [ownerId], references: [id])
+model Person {
+  id        Int       @id @default(autoincrement())
+  owner     User      @relation(fields: [ownerId], references: [id])
   ownerId   Int
   name      String?
   email     String?
   phone     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  threads Thread[]
+  messages  Message[]
+  notes     Note[]
+}
+
+model Thread {
+  id        Int       @id @default(autoincrement())
+  owner     User      @relation(fields: [ownerId], references: [id])
+  ownerId   Int
+  person    Person   @relation(fields: [personId], references: [id])
+  personId  Int
+  messages Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  thread    Thread   @relation(fields: [threadId], references: [id])
+  threadId  Int
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  person    Person?  @relation(fields: [personId], references: [id])
+  personId  Int?
+  text      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  notes     Note[]
 }
 
 model Note {
   id        Int      @id @default(autoincrement())
   owner     User     @relation(fields: [ownerId], references: [id])
   ownerId   Int
-  lead      Lead @relation(fields: [leadId], references: [id])
-  leadId    Int
+  person    Person   @relation(fields: [personId], references: [id])
+  personId  Int
   title     String
   body      String?
   createdAt DateTime @default(now())

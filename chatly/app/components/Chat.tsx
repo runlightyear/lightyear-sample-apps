@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export interface ChatProps {
   messages: Array<{
-    id: string;
+    id: string | number;
     from: string;
     position: "left" | "right";
     when: string;
@@ -18,7 +18,7 @@ export function Chat(props: ChatProps) {
 
   return (
     <div className="grow flex flex-col h-full">
-      <div className="grow flex flex-col h-full p-4 gap-2">
+      <div className="grow flex flex-col h-full p-4 gap-6">
         {messages.map((message) => (
           <div
             key={message.id}

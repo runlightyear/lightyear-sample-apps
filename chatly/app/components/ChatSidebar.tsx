@@ -2,13 +2,11 @@ import { Input } from "@/components/ui/input";
 
 export interface ChatSidebarProps {
   lead: {
-    name: string;
-    email: string;
-    phone: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
   };
 }
-
-const attr = { className: "flex" };
 
 interface AttributeProps {
   label: string;
@@ -21,7 +19,7 @@ function Attribute(props: AttributeProps) {
   return (
     <div className="flex items-center my-4 gap-2">
       <div className="text-muted-foreground w-16">{label}</div>
-      <Input value={value} />
+      <Input value={value ?? ""} />
     </div>
   );
 }

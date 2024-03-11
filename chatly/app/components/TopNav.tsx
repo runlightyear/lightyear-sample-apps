@@ -7,7 +7,7 @@ import { AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 
 export interface TopNavProps {
-  selected: "messages" | "leads" | "integrations";
+  selected: "messages" | "people" | "integrations";
   user: {
     initials: string;
   };
@@ -46,8 +46,8 @@ export function TopNav(props: TopNavProps) {
           <MenuItem to="/messages" selected={selected === "messages"}>
             Messages
           </MenuItem>
-          <MenuItem to="/leads" selected={selected === "leads"}>
-            Leads
+          <MenuItem to="/people" selected={selected === "people"}>
+            People
           </MenuItem>
           <MenuItem to="/integrations" selected={selected === "integrations"}>
             Integrations
