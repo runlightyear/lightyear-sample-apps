@@ -1,9 +1,7 @@
-import type {
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-  MetaFunction,
-} from "@remix-run/node";
+import type { LoaderFunction, MetaFunction } from "@remix-run/node";
+import { Outlet, useLoaderData, useLocation } from "@remix-run/react";
 import { TopNav } from "~/components/TopNav";
+import { logout, requireUser } from "~/session.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,10 +10,21 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+export const loader: LoaderFunction = async ({ request }) => {
+  const user = await requireUser(request);
+
+  return { user };
+};
+
 export default function Index() {
+  const data = useLoaderData<typeof loader>();
+
+  const { user } = data;
+
   return (
     <>
-      <TopNav selected={"integrations"} user={{ initials: "AB" }} />
+      <TopNav selected={"integrations"} user={user} />
+      <Outlet />
     </>
   );
 }

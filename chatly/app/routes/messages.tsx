@@ -3,12 +3,13 @@ import type {
   LoaderFunctionArgs,
   MetaFunction,
 } from "@remix-run/node";
-import { Outlet } from "@remix-run/react";
+import { Outlet, useSubmit } from "@remix-run/react";
 import { prisma } from "~/db.server";
 import { useLoaderData } from "@remix-run/react";
 import { json } from "@remix-run/node";
-import { requireUserId } from "~/session.server";
+import { requireUser, requireUserId } from "~/session.server";
 import { TopNav } from "~/components/TopNav";
+import { sync } from "~/operations/sync.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -18,9 +19,9 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const userId = await requireUserId(request);
+  const user = await requireUser(request);
   const threads = await prisma.thread.findMany({
-    where: { ownerId: userId },
+    where: { ownerId: user.id },
     include: {
       messages: true,
       person: true,
@@ -29,15 +30,28 @@ export async function loader({ request }: LoaderFunctionArgs) {
       createdAt: "desc",
     },
   });
-  return json({ threads });
+  return json({ user, threads });
+}
+
+export async function action({ request, params }: ActionFunctionArgs) {
+  const userId = await requireUserId(request);
+  await sync(userId);
+  return null;
 }
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
+  const submit = useSubmit();
+
+  const { user } = data;
+
+  const handleSync = () => {
+    submit(null, { method: "POST", navigate: false });
+  };
 
   return (
     <div className="flex flex-col h-screen">
-      <TopNav selected="messages" user={{ initials: "AB" }} />
+      <TopNav selected="messages" user={user} onSync={handleSync} />
       <div className="grow flex items-stretch">
         <Outlet />
       </div>

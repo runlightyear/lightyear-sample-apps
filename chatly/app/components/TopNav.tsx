@@ -1,16 +1,28 @@
-import { Link } from "@remix-run/react";
-import { ReactNode } from "react";
+import { Link, useFetcher } from "@remix-run/react";
+import { ReactNode, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChatlyLogo } from "./ChatlyLogo";
 import { Avatar } from "@radix-ui/react-avatar";
 import { AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface TopNavProps {
   selected: "messages" | "people" | "integrations";
   user: {
+    email: string;
     initials: string;
   };
+  onSync: () => void;
+  onLogout: () => Promise<void>;
 }
 
 interface MenuItemProps {
@@ -36,7 +48,15 @@ function MenuItem(props: MenuItemProps) {
 }
 
 export function TopNav(props: TopNavProps) {
-  const { user, selected } = props;
+  const fetcher = useFetcher();
+  const { user, selected, onSync, onLogout } = props;
+
+  const [showMenu, setShowMenu] = useState(true);
+
+  const handleLogout = () => {
+    console.log("ready to logout");
+    fetcher.submit(null, { method: "POST", action: "/logout" });
+  };
 
   return (
     <div className="border-b">
@@ -55,12 +75,25 @@ export function TopNav(props: TopNavProps) {
         </nav>
 
         <div className="ml-auto flex items-center space-x-4">
+          <Button onClick={onSync}>Sync</Button>
           <Input className="w-[350px]" placeholder="Search..." />
-          <Avatar className="size-9">
-            <AvatarFallback className="text-muted-foreground">
-              AB
-            </AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="size-9 cursor-pointer">
+                <AvatarFallback className="text-muted-foreground uppercase">
+                  {user.initials}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>
+                <span className="text-muted-foreground">Logged in as</span>{" "}
+                {user.email}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </div>

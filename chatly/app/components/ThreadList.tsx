@@ -16,9 +16,8 @@ export function ThreadList(props: ThreadListProps) {
   return (
     <div className="flex flex-col h-full border-r w-72">
       {threads.map((thread) => (
-        <Link to={`/messages/inbox/${thread.id}`}>
+        <Link to={`/messages/inbox/${thread.id}`} key={thread.id}>
           <div
-            key={thread.id}
             className={cn(
               "p-4 border-b",
               selectedId === thread.id ? "bg-gray-100" : ""
