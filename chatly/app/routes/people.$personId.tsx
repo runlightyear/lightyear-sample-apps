@@ -36,10 +36,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return json({ message: "Updated" });
     }
     case "DELETE": {
-      await prisma.person.delete({
+      await prisma.person.update({
         where: {
           ownerId: userId,
           id: parseInt(personId),
+        },
+        data: {
+          isDeleted: true,
         },
       });
 

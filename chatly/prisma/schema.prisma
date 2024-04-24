@@ -31,7 +31,8 @@ model Person {
   phone     String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  threads Thread[]
+  isDeleted Boolean   @default(false)
+  threads   Thread[]
   messages  Message[]
   notes     Note[]
 }
@@ -40,9 +41,9 @@ model Thread {
   id        Int       @id @default(autoincrement())
   owner     User      @relation(fields: [ownerId], references: [id])
   ownerId   Int
-  person    Person   @relation(fields: [personId], references: [id])
+  person    Person    @relation(fields: [personId], references: [id])
   personId  Int
-  messages Message[]
+  messages  Message[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
@@ -68,6 +69,7 @@ model Note {
   personId  Int
   title     String
   body      String?
+  isDeleted Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

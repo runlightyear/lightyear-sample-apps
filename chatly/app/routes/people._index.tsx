@@ -53,7 +53,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const user = await requireUser(request);
 
   const people = await prisma.person.findMany({
-    where: { ownerId: user.id },
+    where: { ownerId: user.id, isDeleted: false },
     orderBy: {
       name: "asc",
     },

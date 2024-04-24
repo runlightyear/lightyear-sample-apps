@@ -4,6 +4,7 @@ export async function sync() {
   console.log("Ready to sync...");
 
   const people = await prisma.person.findMany({
+    where: { isDeleted: false },
     orderBy: {
       updatedAt: "asc",
     },
