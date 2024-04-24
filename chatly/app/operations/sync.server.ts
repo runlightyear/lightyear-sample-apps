@@ -1,170 +1,166 @@
 import { prisma } from "~/db.server";
-import z from "zod";
 
-const CollectionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  title: z.string(),
-  items: z.array(
-    z.object({
-      id: z.string(),
-      managedUserId: z.string(),
-      externalId: z.string().nullable(),
-      appName: z.string().nullable(),
-      customAppName: z.string().nullable(),
-      productId: z.string().nullable(),
-      data: z.object({
-        name: z.string().nullable(),
-        email: z.string().nullable(),
-        phone: z.string().nullable(),
-      }),
-      createdAt: z.string(),
-      updatedAt: z.string(),
-      status: z.enum(["UPSERTED", "DELETED"]),
-    })
-  ),
-});
+export async function sync() {
+  console.log("Ready to sync...");
 
-type Collection = z.infer<typeof CollectionSchema>;
-
-export async function sync(userId: number) {
-  console.log("Syncing...");
-
-  const collection = await getCollection();
-  let lastProductSync = await getLastProductSync();
-
-  for (const item of collection.items) {
-    if (new Date(item.updatedAt) < new Date(lastProductSync)) {
-      console.log("Skipping item", item.data.name);
-      continue;
-    }
-
-    if (item.status === "UPSERTED") {
-      if (!item.productId) {
-        const newPerson = await prisma.person.create({
-          data: {
-            ownerId: userId,
-            name: item.data.name,
-            email: item.data.email,
-            phone: item.data.phone,
-          },
-        });
-
-        item.productId = newPerson.id.toString();
-        console.log("Created person", newPerson.name);
-      } else {
-        await prisma.person.update({
-          where: { id: parseInt(item.productId) },
-          data: {
-            name: item.data.name,
-            email: item.data.email,
-            phone: item.data.phone,
-          },
-        });
-        console.log("Updated person", item.data.name);
-      }
-    } else if (item.status === "DELETED") {
-      if (item.productId) {
-        await prisma.person.delete({
-          where: { id: parseInt(item.productId) },
-        });
-        item.productId = null;
-        console.log("Deleted person", item.data.name);
-      }
-    }
-
-    await updateCollection(collection);
-
-    lastProductSync = item.updatedAt;
-    await updateLastProductSync(lastProductSync);
-  }
-}
-
-async function getCollection() {
-  const response = await fetch(
-    "https://app.runlightyear.com/api/v1/envs/dev/actions/hubspot/variables/collection",
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-    }
-  );
-
-  const json = await response.json();
-  const value = JSON.parse(json.value);
-  const collection = CollectionSchema.parse(value);
-
-  return collection;
-}
-
-async function updateCollection(collection: Collection) {
-  const response = await fetch(
-    "https://app.runlightyear.com/api/v1/envs/dev/actions/hubspot/variables/collection",
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-      body: JSON.stringify({ value: JSON.stringify(collection) }),
-    }
-  );
-}
-
-async function getLastProductSync() {
-  const response = await fetch(
-    "https://app.runlightyear.com/api/v1/envs/dev/actions/hubspot/variables/lastProductSync",
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-    }
-  );
-
-  const json = await response.json();
-  return json.value;
-}
-
-async function updateLastProductSync(lastSync: string) {
-  const response = await fetch(
-    "https://app.runlightyear.com/api/v1/envs/dev/actions/hubspot/variables/lastProductSync",
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-      body: JSON.stringify({ value: lastSync }),
-    }
-  );
-}
-
-export async function updatePersonInLightyear(id: string) {
-  const collection = await getCollection();
-  const item = collection.items.find((i) => i.productId === id);
-  if (!item) {
-    console.log("Person not found in collection", id);
-    return;
-  }
-
-  const person = await prisma.person.findUnique({
-    where: { id: parseInt(id) },
+  const people = await prisma.person.findMany({
+    orderBy: {
+      updatedAt: "asc",
+    },
   });
 
-  if (!person) {
-    console.log("Person not found in database", id);
-    return;
+  for (const person of people) {
+    await upsertObject({
+      collection: "crm",
+      model: "contact",
+      userId: person.ownerId.toString(),
+      objectId: person.id.toString(),
+      updatedAt: person.updatedAt.toISOString(),
+      data: {
+        firstName: person.name?.split(" ")[0],
+        lastName: person.name?.split(" ")[1] || "",
+        primaryEmail: person.email,
+      },
+    });
   }
 
-  item.data = {
-    name: person.name,
-    email: person.email,
-    phone: person.phone,
-  };
+  const response = await fetch(
+    `http://localhost:3000/api/v1/envs/dev/collections/crm/models/contact/objects/product/delta`,
+    {
+      headers: {
+        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+      },
+    }
+  );
 
-  await updateCollection(collection);
+  const responseData = await response.json();
+
+  console.log("responseData", JSON.stringify(responseData, null, 2));
+
+  for (const change of responseData.changes) {
+    if (change.operation === "CREATE") {
+      const newPerson = await prisma.person.create({
+        data: {
+          ownerId: parseInt(change.userId),
+          name: change.data.firstName + " " + change.data.lastName,
+          email: change.data.primaryEmail,
+        },
+      });
+
+      await upsertObject({
+        collection: "crm",
+        model: "contact",
+        userId: newPerson.ownerId.toString(),
+        objectId: newPerson.id.toString(),
+        updatedAt: newPerson.updatedAt.toISOString(),
+        data: {
+          firstName: newPerson.name?.split(" ")[0],
+          lastName: newPerson.name?.split(" ")[1] || "",
+          primaryEmail: newPerson.email,
+        },
+      });
+    } else if (change.operation === "UPDATE") {
+      const updatedPerson = await prisma.person.update({
+        where: {
+          ownerId: parseInt(change.userId),
+          id: parseInt(change.objectId),
+        },
+        data: {
+          name: change.data.firstName + " " + change.data.lastName,
+          email: change.data.primaryEmail,
+        },
+      });
+
+      await upsertObject({
+        collection: "crm",
+        model: "contact",
+        userId: updatedPerson.ownerId.toString(),
+        objectId: updatedPerson.id.toString(),
+        updatedAt: updatedPerson.updatedAt.toISOString(),
+        data: {
+          firstName: updatedPerson.name?.split(" ")[0],
+          lastName: updatedPerson.name?.split(" ")[1] || "",
+          primaryEmail: updatedPerson.email,
+        },
+      });
+    } else if (change.operation === "DELETE") {
+      await prisma.person.delete({
+        where: {
+          ownerId: parseInt(change.userId),
+          id: parseInt(change.objectId),
+        },
+      });
+    }
+  }
+}
+
+export interface UpsertObjectProps {
+  collection: string;
+  model: string;
+  userId: string;
+  objectId: string;
+  updatedAt: string;
+  data: unknown;
+}
+
+export async function upsertObject(props: UpsertObjectProps) {
+  const { collection, model, userId, objectId, updatedAt, data } = props;
+
+  const response = await fetch(
+    `http://localhost:3000/api/v1/envs/dev/collections/${collection}/models/${model}/objects`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        managedUserExternalId: userId,
+        externalId: objectId,
+        externalUpdatedAt: updatedAt,
+        data,
+      }),
+    }
+  );
+
+  if (response.ok) {
+    console.log(`Upserted object: ${objectId}`);
+    console.log(await response.text());
+  } else {
+    console.error("Failed to upsert object:", objectId);
+    console.log(await response.text());
+  }
+}
+
+export interface DeleteObjectProps {
+  collection: string;
+  model: string;
+  userId: string;
+  objectId: string;
+}
+
+export async function deleteObject(props: DeleteObjectProps) {
+  const { collection, model, userId, objectId } = props;
+
+  const response = await fetch(
+    `http://localhost:3000/api/v1/envs/dev/collections/${collection}/models/${model}/objects`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+      },
+      body: JSON.stringify({
+        managedUserExternalId: userId,
+        externalId: objectId,
+      }),
+    }
+  );
+
+  if (response.ok) {
+    console.log(`Deleted object: ${objectId}`);
+    console.log(await response.text());
+  } else {
+    console.error("Failed to delete object:", objectId);
+    console.log(await response.text());
+  }
 }

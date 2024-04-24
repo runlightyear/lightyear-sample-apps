@@ -35,7 +35,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const userId = await requireUserId(request);
-  await sync(userId);
+  await sync();
   return null;
 }
 
@@ -45,13 +45,9 @@ export default function Index() {
 
   const { user } = data;
 
-  const handleSync = () => {
-    submit(null, { method: "POST", navigate: false });
-  };
-
   return (
     <div className="flex flex-col h-screen">
-      <TopNav selected="messages" user={user} onSync={handleSync} />
+      <TopNav selected="messages" user={user} />
       <div className="grow flex items-stretch">
         <Outlet />
       </div>

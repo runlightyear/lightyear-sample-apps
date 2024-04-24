@@ -21,8 +21,6 @@ export interface TopNavProps {
     email: string;
     initials: string;
   };
-  onSync: () => void;
-  onLogout: () => Promise<void>;
 }
 
 interface MenuItemProps {
@@ -49,9 +47,13 @@ function MenuItem(props: MenuItemProps) {
 
 export function TopNav(props: TopNavProps) {
   const fetcher = useFetcher();
-  const { user, selected, onSync, onLogout } = props;
+  const { user, selected } = props;
 
   const [showMenu, setShowMenu] = useState(true);
+
+  const handleSync = () => {
+    fetcher.submit(null, { method: "POST", action: "/sync" });
+  };
 
   const handleLogout = () => {
     console.log("ready to logout");
@@ -75,7 +77,7 @@ export function TopNav(props: TopNavProps) {
         </nav>
 
         <div className="ml-auto flex items-center space-x-4">
-          <Button onClick={onSync}>Sync</Button>
+          <Button onClick={handleSync}>Sync</Button>
           <Input className="w-[350px]" placeholder="Search..." />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

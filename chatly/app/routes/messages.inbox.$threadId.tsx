@@ -11,7 +11,6 @@ import { ThreadList } from "~/components/ThreadList";
 import { Chat } from "~/components/Chat";
 import { ChatSidebar } from "~/components/ChatSidebar";
 import { useToast } from "@/components/ui/use-toast";
-import { sync, updatePersonInLightyear } from "~/operations/sync.server";
 
 export const meta: MetaFunction = () => {
   return [
