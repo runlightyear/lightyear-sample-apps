@@ -4,25 +4,34 @@ export async function sync() {
   console.log("Ready to sync...");
 
   const people = await prisma.person.findMany({
-    where: { isDeleted: false },
     orderBy: {
       updatedAt: "asc",
     },
   });
 
   for (const person of people) {
-    await upsertObject({
-      collection: "crm",
-      model: "contact",
-      userId: person.ownerId.toString(),
-      objectId: person.id.toString(),
-      updatedAt: person.updatedAt.toISOString(),
-      data: {
-        firstName: person.name?.split(" ")[0],
-        lastName: person.name?.split(" ")[1] || "",
-        primaryEmail: person.email,
-      },
-    });
+    if (!person.isDeleted) {
+      await upsertObject({
+        collection: "crm",
+        model: "contact",
+        userId: person.ownerId.toString(),
+        objectId: person.id.toString(),
+        updatedAt: person.updatedAt.toISOString(),
+        data: {
+          firstName: person.name?.split(" ")[0],
+          lastName: person.name?.split(" ")[1] || "",
+          primaryEmail: person.email,
+          primaryPhone: person.phone,
+        },
+      });
+    } else {
+      await deleteObject({
+        collection: "crm",
+        model: "contact",
+        userId: person.ownerId.toString(),
+        objectId: person.id.toString(),
+      });
+    }
   }
 
   const response = await fetch(
@@ -45,6 +54,7 @@ export async function sync() {
           ownerId: parseInt(change.userId),
           name: change.data.firstName + " " + change.data.lastName,
           email: change.data.primaryEmail,
+          phone: change.data.primaryPhone,
         },
       });
 
@@ -58,6 +68,7 @@ export async function sync() {
           firstName: newPerson.name?.split(" ")[0],
           lastName: newPerson.name?.split(" ")[1] || "",
           primaryEmail: newPerson.email,
+          primaryPhone: newPerson.phone,
         },
       });
     } else if (change.operation === "UPDATE") {
@@ -69,6 +80,7 @@ export async function sync() {
         data: {
           name: change.data.firstName + " " + change.data.lastName,
           email: change.data.primaryEmail,
+          phone: change.data.primaryPhone,
         },
       });
 
@@ -82,14 +94,25 @@ export async function sync() {
           firstName: updatedPerson.name?.split(" ")[0],
           lastName: updatedPerson.name?.split(" ")[1] || "",
           primaryEmail: updatedPerson.email,
+          primaryPhone: updatedPerson.phone,
         },
       });
     } else if (change.operation === "DELETE") {
-      await prisma.person.delete({
+      await prisma.person.update({
         where: {
           ownerId: parseInt(change.userId),
           id: parseInt(change.objectId),
         },
+        data: {
+          isDeleted: true,
+        },
+      });
+
+      await deleteObject({
+        collection: "crm",
+        model: "contact",
+        userId: change.userId,
+        objectId: change.objectId,
       });
     }
   }
@@ -149,6 +172,7 @@ export async function deleteObject(props: DeleteObjectProps) {
       method: "DELETE",
       headers: {
         Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         managedUserExternalId: userId,
