@@ -43,10 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "Chatly | People" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
+  return [{ title: "Chatly | People" }];
 };
 
 export const loader: LoaderFunction = async ({ request }) => {

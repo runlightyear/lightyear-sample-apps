@@ -13,10 +13,7 @@ import { TopNav } from "~/components/TopNav";
 import { requireUser } from "~/session.server";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
+  return [{ title: "Chatly | Integrations" }];
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
