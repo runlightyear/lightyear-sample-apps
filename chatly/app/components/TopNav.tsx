@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export interface TopNavProps {
-  selected: "messages" | "people" | "integrations";
+  selected: "messages" | "people" | "companies" | "integrations";
   user: {
     email: string;
     initials: string;
@@ -70,6 +70,9 @@ export function TopNav(props: TopNavProps) {
           </MenuItem>
           <MenuItem to="/people" selected={selected === "people"}>
             People
+          </MenuItem>
+          <MenuItem to="/companies" selected={selected === "companies"}>
+            Companies
           </MenuItem>
           <MenuItem to="/integrations" selected={selected === "integrations"}>
             Integrations

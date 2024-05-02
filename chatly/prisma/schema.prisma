@@ -17,6 +17,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   people    Person[]
+  companies Company[]
   threads   Thread[]
   messages  Message[]
   notes     Note[]
@@ -26,6 +27,8 @@ model Person {
   id        Int       @id @default(autoincrement())
   owner     User      @relation(fields: [ownerId], references: [id])
   ownerId   Int
+  company   Company?  @relation(fields: [companyId], references: [id])
+  companyId Int?
   name      String?
   email     String?
   phone     String?
@@ -35,6 +38,18 @@ model Person {
   threads   Thread[]
   messages  Message[]
   notes     Note[]
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerId   Int
+  name      String
+  domain    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  people    Person[]
 }
 
 model Thread {

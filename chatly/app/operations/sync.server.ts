@@ -3,6 +3,114 @@ import { prisma } from "~/db.server";
 export async function sync() {
   console.log("Ready to sync...");
 
+  const companies = await prisma.company.findMany({
+    orderBy: {
+      updatedAt: "asc",
+    },
+  });
+
+  for (const company of companies) {
+    if (!company.isDeleted) {
+      await upsertObject({
+        collection: "crm",
+        model: "account",
+        userId: company.ownerId.toString(),
+        objectId: company.id.toString(),
+        updatedAt: company.updatedAt.toISOString(),
+        data: {
+          name: company.name,
+          domain: company.domain,
+        },
+      });
+    } else {
+      await deleteObject({
+        collection: "crm",
+        model: "account",
+        userId: company.ownerId.toString(),
+        objectId: company.id.toString(),
+      });
+    }
+  }
+
+  const companiesResponse = await fetch(
+    `http://localhost:3000/api/v1/envs/dev/collections/crm/models/account/objects/product/delta`,
+    {
+      headers: {
+        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+      },
+    }
+  );
+  const companiesResponseData = await companiesResponse.json();
+
+  console.log(
+    "companiesResponseData",
+    JSON.stringify(companiesResponseData, null, 2)
+  );
+
+  for (const change of companiesResponseData.changes) {
+    if (change.operation === "CREATE") {
+      const newCompany = await prisma.company.create({
+        data: {
+          ownerId: parseInt(change.userId),
+          name: change.data.name,
+          domain: change.data.domain,
+        },
+      });
+
+      await upsertObject({
+        collection: "crm",
+        model: "account",
+        userId: newCompany.ownerId.toString(),
+        objectId: newCompany.id.toString(),
+        updatedAt: newCompany.updatedAt.toISOString(),
+        data: {
+          name: newCompany.name,
+          domain: newCompany.domain,
+        },
+      });
+    } else if (change.operation === "UPDATE") {
+      const updatedCompany = await prisma.company.update({
+        where: {
+          ownerId: parseInt(change.userId),
+          id: parseInt(change.objectId),
+        },
+        data: {
+          name: change.data.name,
+          domain: change.data.domain,
+        },
+      });
+
+      await upsertObject({
+        collection: "crm",
+        model: "account",
+        userId: updatedCompany.ownerId.toString(),
+        objectId: updatedCompany.id.toString(),
+        updatedAt: updatedCompany.updatedAt.toISOString(),
+        data: {
+          name: updatedCompany.name,
+          domain: updatedCompany.domain,
+        },
+      });
+    } else if (change.operation === "DELETE") {
+      await prisma.company.update({
+        where: {
+          ownerId: parseInt(change.userId),
+          id: parseInt(change.objectId),
+        },
+        data: {
+          isDeleted: true,
+        },
+      });
+
+      await deleteObject({
+        collection: "crm",
+        model: "account",
+        userId: change.userId,
+        objectId: change.objectId,
+      });
+    }
+  }
+
   const people = await prisma.person.findMany({
     orderBy: {
       updatedAt: "asc",
