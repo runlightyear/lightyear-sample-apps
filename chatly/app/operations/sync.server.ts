@@ -1,299 +1,157 @@
 import { prisma } from "~/db.server";
+import {
+  LightyearSdk,
+  ModelSync,
+  ObjectMetaData,
+} from "./lightyear-sdk.server";
+import { CrmAccountModel, CrmContactModel } from "./lightyear-types";
+import { Company } from "@prisma/client";
+
+const lightyear = new LightyearSdk({ apiKey: process.env.LIGHTYEAR_API_KEY! });
 
 export async function sync() {
-  console.log("Ready to sync...");
-
-  const companies = await prisma.company.findMany({
-    orderBy: {
-      updatedAt: "asc",
+  const companyToModel = (
+    company: Company
+  ): ObjectMetaData<CrmAccountModel> => ({
+    id: company.id.toString(),
+    userId: company.ownerId.toString(),
+    updatedAt: company.updatedAt.toISOString(),
+    isDeleted: company.isDeleted,
+    data: {
+      name: company.name,
+      domain: company.domain,
     },
   });
 
-  for (const company of companies) {
-    if (!company.isDeleted) {
-      await upsertObject({
-        collection: "crm",
-        model: "account",
-        userId: company.ownerId.toString(),
-        objectId: company.id.toString(),
-        updatedAt: company.updatedAt.toISOString(),
-        data: {
-          name: company.name,
-          domain: company.domain,
+  await lightyear.syncCollection({
+    collection: "crm",
+    models: {
+      account: new ModelSync<CrmAccountModel>({
+        toObject: () => {},
+        toSource: () => {},
+        list: async () => {
+          const companies = await prisma.company.findMany({
+            orderBy: {
+              updatedAt: "asc",
+            },
+          });
+          return companies.map((company) => companyToModel(company));
         },
-      });
-    } else {
-      await deleteObject({
-        collection: "crm",
-        model: "account",
-        userId: company.ownerId.toString(),
-        objectId: company.id.toString(),
-      });
-    }
-  }
-
-  const companiesResponse = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/collections/crm/models/account/objects/product/delta`,
-    {
-      headers: {
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-    }
-  );
-  const companiesResponseData = await companiesResponse.json();
-
-  console.log(
-    "companiesResponseData",
-    JSON.stringify(companiesResponseData, null, 2)
-  );
-
-  for (const change of companiesResponseData.changes) {
-    if (change.operation === "CREATE") {
-      const newCompany = await prisma.company.create({
-        data: {
-          ownerId: parseInt(change.userId),
-          name: change.data.name,
-          domain: change.data.domain,
+        get: async (id) => {
+          const company = await prisma.company.findUniqueOrThrow({
+            where: { id: parseInt(id) },
+          });
+          return companyToModel(company);
         },
-      });
-
-      await upsertObject({
-        collection: "crm",
-        model: "account",
-        userId: newCompany.ownerId.toString(),
-        objectId: newCompany.id.toString(),
-        updatedAt: newCompany.updatedAt.toISOString(),
-        data: {
-          name: newCompany.name,
-          domain: newCompany.domain,
+        create: async (object) => {
+          const newCompany = await prisma.company.create({
+            data: {
+              ownerId: parseInt(object.userId),
+              name: object.data.name,
+              domain: object.data.domain,
+            },
+          });
+          return newCompany.id.toString();
         },
-      });
-    } else if (change.operation === "UPDATE") {
-      const updatedCompany = await prisma.company.update({
-        where: {
-          ownerId: parseInt(change.userId),
-          id: parseInt(change.objectId),
+        update: async (object) => {
+          await prisma.company.update({
+            where: {
+              id: parseInt(object.id),
+            },
+            data: {
+              name: object.data.name,
+              domain: object.data.domain,
+            },
+          });
         },
-        data: {
-          name: change.data.name,
-          domain: change.data.domain,
+        delete: async (id) => {
+          await prisma.company.update({
+            where: {
+              id: parseInt(id),
+            },
+            data: {
+              isDeleted: true,
+            },
+          });
         },
-      });
-
-      await upsertObject({
-        collection: "crm",
-        model: "account",
-        userId: updatedCompany.ownerId.toString(),
-        objectId: updatedCompany.id.toString(),
-        updatedAt: updatedCompany.updatedAt.toISOString(),
-        data: {
-          name: updatedCompany.name,
-          domain: updatedCompany.domain,
+      }),
+      contact: new ModelSync<CrmContactModel>({
+        list: async () => {
+          const people = await prisma.person.findMany({
+            orderBy: { updatedAt: "asc" },
+          });
+          return people.map((person) => ({
+            id: person.id.toString(),
+            userId: person.ownerId.toString(),
+            updatedAt: person.updatedAt.toISOString(),
+            isDeleted: person.isDeleted,
+            data: {
+              firstName: person.name?.split(" ")[0] || null,
+              lastName: person.name?.split(" ")[1] || null,
+              primaryEmail: person.email,
+              primaryPhone: person.phone,
+              accountId: person.companyId?.toString() || null,
+            },
+          }));
         },
-      });
-    } else if (change.operation === "DELETE") {
-      await prisma.company.update({
-        where: {
-          ownerId: parseInt(change.userId),
-          id: parseInt(change.objectId),
+        get: async (id) => {
+          const person = await prisma.person.findUniqueOrThrow({
+            where: { id: parseInt(id) },
+          });
+          return {
+            id: person.id.toString(),
+            userId: person.ownerId.toString(),
+            updatedAt: person.updatedAt.toISOString(),
+            isDeleted: person.isDeleted,
+            data: {
+              firstName: person.name?.split(" ")[0] || null,
+              lastName: person.name?.split(" ")[1] || null,
+              primaryEmail: person.email,
+              primaryPhone: person.phone,
+              accountId: person.companyId?.toString() || null,
+            },
+          };
         },
-        data: {
-          isDeleted: true,
+        create: async (object) => {
+          const newPerson = await prisma.person.create({
+            data: {
+              ownerId: parseInt(object.userId),
+              name: `${object.data.firstName} ${object.data.lastName}`,
+              email: object.data.primaryEmail,
+              phone: object.data.primaryPhone,
+              companyId: object.data.accountId
+                ? parseInt(object.data.accountId)
+                : null,
+            },
+          });
+          return newPerson.id.toString();
         },
-      });
-
-      await deleteObject({
-        collection: "crm",
-        model: "account",
-        userId: change.userId,
-        objectId: change.objectId,
-      });
-    }
-  }
-
-  const people = await prisma.person.findMany({
-    orderBy: {
-      updatedAt: "asc",
+        update: async (object) => {
+          await prisma.person.update({
+            where: {
+              id: parseInt(object.id),
+            },
+            data: {
+              name: `${object.data.firstName} ${object.data.lastName}`,
+              email: object.data.primaryEmail,
+              phone: object.data.primaryPhone,
+              companyId: object.data.accountId
+                ? parseInt(object.data.accountId)
+                : null,
+            },
+          });
+        },
+        delete: async (id) => {
+          await prisma.person.update({
+            where: {
+              id: parseInt(id),
+            },
+            data: {
+              isDeleted: true,
+            },
+          });
+        },
+      }),
     },
   });
-
-  for (const person of people) {
-    if (!person.isDeleted) {
-      await upsertObject({
-        collection: "crm",
-        model: "contact",
-        userId: person.ownerId.toString(),
-        objectId: person.id.toString(),
-        updatedAt: person.updatedAt.toISOString(),
-        data: {
-          firstName: person.name?.split(" ")[0],
-          lastName: person.name?.split(" ")[1] || "",
-          primaryEmail: person.email,
-          primaryPhone: person.phone,
-        },
-      });
-    } else {
-      await deleteObject({
-        collection: "crm",
-        model: "contact",
-        userId: person.ownerId.toString(),
-        objectId: person.id.toString(),
-      });
-    }
-  }
-
-  const response = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/collections/crm/models/contact/objects/product/delta`,
-    {
-      headers: {
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-      },
-    }
-  );
-
-  const responseData = await response.json();
-
-  console.log("responseData", JSON.stringify(responseData, null, 2));
-
-  for (const change of responseData.changes) {
-    if (change.operation === "CREATE") {
-      const newPerson = await prisma.person.create({
-        data: {
-          ownerId: parseInt(change.userId),
-          name: change.data.firstName + " " + change.data.lastName,
-          email: change.data.primaryEmail,
-          phone: change.data.primaryPhone,
-        },
-      });
-
-      await upsertObject({
-        collection: "crm",
-        model: "contact",
-        userId: newPerson.ownerId.toString(),
-        objectId: newPerson.id.toString(),
-        updatedAt: newPerson.updatedAt.toISOString(),
-        data: {
-          firstName: newPerson.name?.split(" ")[0],
-          lastName: newPerson.name?.split(" ")[1] || "",
-          primaryEmail: newPerson.email,
-          primaryPhone: newPerson.phone,
-        },
-      });
-    } else if (change.operation === "UPDATE") {
-      const updatedPerson = await prisma.person.update({
-        where: {
-          ownerId: parseInt(change.userId),
-          id: parseInt(change.objectId),
-        },
-        data: {
-          name: change.data.firstName + " " + change.data.lastName,
-          email: change.data.primaryEmail,
-          phone: change.data.primaryPhone,
-        },
-      });
-
-      await upsertObject({
-        collection: "crm",
-        model: "contact",
-        userId: updatedPerson.ownerId.toString(),
-        objectId: updatedPerson.id.toString(),
-        updatedAt: updatedPerson.updatedAt.toISOString(),
-        data: {
-          firstName: updatedPerson.name?.split(" ")[0],
-          lastName: updatedPerson.name?.split(" ")[1] || "",
-          primaryEmail: updatedPerson.email,
-          primaryPhone: updatedPerson.phone,
-        },
-      });
-    } else if (change.operation === "DELETE") {
-      await prisma.person.update({
-        where: {
-          ownerId: parseInt(change.userId),
-          id: parseInt(change.objectId),
-        },
-        data: {
-          isDeleted: true,
-        },
-      });
-
-      await deleteObject({
-        collection: "crm",
-        model: "contact",
-        userId: change.userId,
-        objectId: change.objectId,
-      });
-    }
-  }
-}
-
-export interface UpsertObjectProps {
-  collection: string;
-  model: string;
-  userId: string;
-  objectId: string;
-  updatedAt: string;
-  data: unknown;
-}
-
-export async function upsertObject(props: UpsertObjectProps) {
-  const { collection, model, userId, objectId, updatedAt, data } = props;
-
-  const response = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/collections/${collection}/models/${model}/objects`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        managedUserExternalId: userId,
-        externalId: objectId,
-        externalUpdatedAt: updatedAt,
-        data,
-      }),
-    }
-  );
-
-  if (response.ok) {
-    console.log(`Upserted object: ${objectId}`);
-    console.log(await response.text());
-  } else {
-    console.error("Failed to upsert object:", objectId);
-    console.log(await response.text());
-  }
-}
-
-export interface DeleteObjectProps {
-  collection: string;
-  model: string;
-  userId: string;
-  objectId: string;
-}
-
-export async function deleteObject(props: DeleteObjectProps) {
-  const { collection, model, userId, objectId } = props;
-
-  const response = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/collections/${collection}/models/${model}/objects`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        managedUserExternalId: userId,
-        externalId: objectId,
-      }),
-    }
-  );
-
-  if (response.ok) {
-    console.log(`Deleted object: ${objectId}`);
-    console.log(await response.text());
-  } else {
-    console.error("Failed to delete object:", objectId);
-    console.log(await response.text());
-  }
 }

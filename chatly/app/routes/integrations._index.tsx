@@ -1,15 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
-import { Outlet, useLoaderData, useLocation } from "@remix-run/react";
-import { TopNav } from "~/components/TopNav";
+import { useLoaderData } from "@remix-run/react";
 import { requireUser } from "~/session.server";
 
 export const meta: MetaFunction = () => {
@@ -29,21 +26,25 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const responseData = await response.json();
 
-  console.log("responseData", responseData);
-
-  return { integrations: responseData };
+  return {
+    integrations: responseData.map((integration: any) => ({
+      id: integration.id,
+      name: integration.name,
+      title: integration.title,
+      description: integration.description,
+      authStatus: integration.authStatus,
+    })),
+  };
 };
 
 export default function Index() {
   const data = useLoaderData<typeof loader>();
-  const location = useLocation();
-
   const { integrations } = data;
 
   return (
     <>
       <div className="flex flex-wrap justify-center gap-8 mt-16">
-        {integrations.map((integration) => (
+        {integrations.map((integration: any) => (
           <a href={`/integrations/${integration.name}`} key={integration.id}>
             <Card className="w-96">
               <CardHeader>

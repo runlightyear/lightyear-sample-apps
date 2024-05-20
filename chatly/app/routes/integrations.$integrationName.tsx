@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import type {
   ActionFunction,
   LoaderFunction,
@@ -7,7 +6,6 @@ import type {
 } from "@remix-run/node";
 import {
   Form,
-  redirect,
   useActionData,
   useFetcher,
   useLoaderData,
@@ -27,8 +25,6 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
   const { integrationName } = params;
 
-  console.log("integrationName", integrationName);
-
   const response = await fetch(
     `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}`,
     {
@@ -40,89 +36,17 @@ export const loader: LoaderFunction = async ({ request, params }) => {
 
   const responseData = await response.json();
 
-  console.log("responseData", responseData);
-
-  // const accessKeyResponse = await fetch(
-  //   `http://localhost:3000/api/v1/envs/dev/custom-apps/hubspot/managed-users/${userId}/data`,
-  //   {
-  //     headers: {
-  //       Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-  //     },
-  //   }
-  // );
-
-  // const accessKeyResponseData = await accessKeyResponse.json();
-  // console.log("accessKeyResponseData", accessKeyResponseData);
-
-  return { integration: responseData };
-};
-
-export const action: ActionFunction = async ({ request }) => {
-  const userId = await requireUserId(request);
-  const formData = await request.formData();
-
-  console.log("formData");
-  for (const entry of formData.entries()) {
-    console.log(entry);
-  }
-
-  const customAppName = formData.get("customApp");
-  const integrationName = formData.get("integration");
-
-  if (formData.get("authorize")) {
-    const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/authorize`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          redirectUrl: request.url,
-        }),
-      }
-    );
-
-    const responseData = await response.json();
-    console.log("responseData", responseData);
-    return responseData;
-  } else if (formData.get("deauthorize")) {
-    const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/deauthorize`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-        },
-      }
-    );
-  } else if (formData.get("enable")) {
-    const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/enable`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-        },
-      }
-    );
-    const responseData = await response.json();
-    console.log("responseData", responseData);
-  } else if (formData.get("disable")) {
-    const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/disable`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
-        },
-      }
-    );
-    const responseData = await response.json();
-    console.log("responseData", responseData);
-  }
-  return null;
+  return {
+    integration: {
+      id: responseData.id,
+      name: responseData.name,
+      title: responseData.title,
+      description: responseData.description,
+      authStatus: responseData.authStatus,
+      app: responseData.app,
+      customApp: responseData.customApp,
+    },
+  };
 };
 
 export default function Index() {
@@ -132,27 +56,11 @@ export default function Index() {
 
   const { integration } = data;
 
-  console.log("integration", integration);
-
   useEffect(() => {
     if (actionData?.authRequestUrl) {
       window.location.href = actionData.authRequestUrl;
     }
   }, [actionData?.authRequestUrl]);
-
-  const handleCheckedChange = async (newValue: boolean) => {
-    console.log("handleCheckedChange", newValue);
-
-    fetcher.submit(
-      {
-        integration: integration.name,
-        ...(newValue === true ? { enable: true } : { disable: true }),
-      },
-      {
-        method: "POST",
-      }
-    );
-  };
 
   return (
     <div className="p-8">
@@ -205,3 +113,39 @@ export default function Index() {
     </div>
   );
 }
+
+export const action: ActionFunction = async ({ request }) => {
+  const userId = await requireUserId(request);
+  const formData = await request.formData();
+
+  const integrationName = formData.get("integration");
+
+  if (formData.get("authorize")) {
+    const response = await fetch(
+      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/authorize`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          redirectUrl: request.url,
+        }),
+      }
+    );
+
+    return await response.json();
+  } else if (formData.get("deauthorize")) {
+    const response = await fetch(
+      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/deauthorize`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+        },
+      }
+    );
+  }
+  return null;
+};
