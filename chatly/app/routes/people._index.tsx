@@ -51,6 +51,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   const people = await prisma.person.findMany({
     where: { ownerId: user.id, isDeleted: false },
+    include: { company: true },
     orderBy: {
       name: "asc",
     },
@@ -251,6 +252,7 @@ export default function Index() {
       accessorKey: "name",
       header: "Name",
     },
+    { accessorKey: "company.name", header: "Company" },
     {
       accessorKey: "email",
       header: "Email",
