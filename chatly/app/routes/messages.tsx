@@ -1,9 +1,10 @@
+import { useEffect } from "react";
 import type {
   ActionFunctionArgs,
   LoaderFunctionArgs,
   MetaFunction,
 } from "@remix-run/node";
-import { Outlet, useSubmit } from "@remix-run/react";
+import { Outlet, useLocation, useNavigate, useSubmit } from "@remix-run/react";
 import { prisma } from "~/db.server";
 import { useLoaderData } from "@remix-run/react";
 import { json } from "@remix-run/node";
@@ -42,6 +43,15 @@ export async function action({ request, params }: ActionFunctionArgs) {
 export default function Index() {
   const data = useLoaderData<typeof loader>();
   const submit = useSubmit();
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.pathname === "/messages") {
+      navigate(`/messages/inbox/${data.threads[0]?.id}`);
+    }
+  }, [location.pathname, data.threads]);
 
   const { user } = data;
 
