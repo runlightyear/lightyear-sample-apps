@@ -6,6 +6,7 @@ import type {
 import { json, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import { prisma } from "~/db.server";
+import { sync } from "~/operations/sync.server";
 import { requireUserId } from "~/session.server";
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -35,6 +36,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
         },
       });
 
+      await sync();
+
       return json({ message: "Updated" });
     }
     case "DELETE": {
@@ -47,6 +50,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
           isDeleted: true,
         },
       });
+
+      await sync();
 
       return json({ message: "Deleted" }, 200);
     }

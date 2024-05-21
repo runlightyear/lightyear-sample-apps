@@ -7,6 +7,7 @@ import {
 import { Outlet, useLoaderData } from "@remix-run/react";
 import { TopNav } from "~/components/TopNav";
 import { prisma } from "~/db.server";
+import { sync } from "~/operations/sync.server";
 import { requireUser } from "~/session.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
@@ -36,6 +37,9 @@ export const action: ActionFunction = async ({ request }) => {
           companyId: companyId ? parseInt(companyId) : null,
         },
       });
+
+      await sync();
+
       return json(person, { status: 201 });
     default:
       return json({ message: "Method not allowed" }, 405);

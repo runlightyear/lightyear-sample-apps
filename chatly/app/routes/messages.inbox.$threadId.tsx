@@ -11,6 +11,7 @@ import { ThreadList } from "~/components/ThreadList";
 import { Chat } from "~/components/Chat";
 import { ChatSidebar } from "~/components/ChatSidebar";
 import { useToast } from "@/components/ui/use-toast";
+import { sync } from "~/operations/sync.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -84,7 +85,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         },
       });
 
-      // await updatePersonInLightyear(personId);
+      await sync();
 
       return json({ message: "Updated" }, 200);
     }

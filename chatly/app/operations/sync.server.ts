@@ -27,8 +27,6 @@ export async function sync() {
     collection: "crm",
     models: {
       account: new ModelSync<CrmAccountModel>({
-        toObject: () => {},
-        toSource: () => {},
         list: async () => {
           const companies = await prisma.company.findMany({
             orderBy: {

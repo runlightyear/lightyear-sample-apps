@@ -71,7 +71,6 @@ function Attribute(props: AttributeProps) {
             } else {
               onChange(value);
             }
-            // onSave();
           }}
         >
           <SelectTrigger className="col-span-3">
