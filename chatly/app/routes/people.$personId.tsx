@@ -21,6 +21,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       const name = data.get("name");
       const email = data.get("email");
       const phone = data.get("phone");
+      const companyId = data.get("companyId");
 
       await prisma.person.update({
         where: {
@@ -30,6 +31,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
           name: name || null,
           email: email || null,
           phone: phone || null,
+          companyId: companyId ? parseInt(companyId) : null,
         },
       });
 

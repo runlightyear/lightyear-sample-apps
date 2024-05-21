@@ -25,6 +25,7 @@ export const action: ActionFunction = async ({ request }) => {
       const name = data.get("name");
       const email = data.get("email");
       const phone = data.get("phone");
+      const companyId = data.get("companyId");
 
       const person = await prisma.person.create({
         data: {
@@ -32,6 +33,7 @@ export const action: ActionFunction = async ({ request }) => {
           name,
           email,
           phone,
+          companyId: companyId ? parseInt(companyId) : null,
         },
       });
       return json(person, { status: 201 });

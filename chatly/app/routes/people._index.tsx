@@ -41,6 +41,13 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Chatly | People" }];
@@ -57,7 +64,14 @@ export const loader: LoaderFunction = async ({ request }) => {
     },
   });
 
-  return { people };
+  const companies = await prisma.company.findMany({
+    where: { ownerId: user.id, isDeleted: false },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return { people, companies };
 };
 
 interface DataTableProps<TData, TValue> {
@@ -128,20 +142,26 @@ interface EditablePerson {
   name: string;
   email: string;
   phone: string;
+  companyId: number | null;
 }
 
 interface CreateEditPersonModalProps {
   person: EditablePerson;
+  companies: Array<{ id: number; name: string }>;
   onClose: () => void;
   onSave: (person: EditablePerson) => void;
 }
 
 const CreateEditPersonModal = (props: CreateEditPersonModalProps) => {
-  const { person, onClose, onSave } = props;
+  const { person, companies, onClose, onSave } = props;
 
   const [name, setName] = useState(person.name || "");
   const [email, setEmail] = useState(person.email || "");
   const [phone, setPhone] = useState(person.phone || "");
+  const [companyId, setCompanyId] = useState<string | undefined>(
+    person.companyId?.toString() ?? undefined
+  );
+  const [selectKey, setSelectKey] = useState(new Date().toISOString());
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -188,6 +208,37 @@ const CreateEditPersonModal = (props: CreateEditPersonModalProps) => {
               onChange={(event) => setPhone(event.target.value)}
             />
           </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="companyId" className="text-right">
+              Company
+            </Label>
+            <Select
+              key={selectKey}
+              defaultValue={companyId}
+              onValueChange={(value) => {
+                if (value === "none") {
+                  setSelectKey(new Date().toISOString());
+                  setCompanyId("");
+                } else {
+                  setCompanyId(value);
+                }
+              }}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a company" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((company) => (
+                  <SelectItem key={company.id} value={company.id.toString()}>
+                    {company.name}
+                  </SelectItem>
+                ))}
+                <SelectItem key="none" value="none">
+                  None
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
@@ -195,7 +246,15 @@ const CreateEditPersonModal = (props: CreateEditPersonModalProps) => {
           </Button>
           <Button
             variant={"default"}
-            onClick={() => onSave({ id: person.id, name, email, phone })}
+            onClick={() =>
+              onSave({
+                id: person.id,
+                name,
+                email,
+                phone,
+                companyId: companyId ? parseInt(companyId) : null,
+              })
+            }
           >
             Save
           </Button>
@@ -237,7 +296,7 @@ const ConfirmDeleteModal = (props: ConfirmDeleteModalProps) => {
 };
 
 export default function Index() {
-  const { people } = useLoaderData<typeof loader>();
+  const { people, companies } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
 
   const [editingPerson, setEditingPerson] = useState<EditablePerson | null>(
@@ -252,7 +311,6 @@ export default function Index() {
       accessorKey: "name",
       header: "Name",
     },
-    { accessorKey: "company.name", header: "Company" },
     {
       accessorKey: "email",
       header: "Email",
@@ -261,6 +319,7 @@ export default function Index() {
       accessorKey: "phone",
       header: "Phone",
     },
+    { accessorKey: "company.name", header: "Company" },
     {
       accessorFn: (person) => {
         const date = new Date(person.updatedAt);
@@ -289,6 +348,7 @@ export default function Index() {
                     name: person.name || "",
                     email: person.email || "",
                     phone: person.phone || "",
+                    companyId: person.companyId || null,
                   })
                 }
               >
@@ -308,13 +368,23 @@ export default function Index() {
     if (person.id === "new") {
       console.log("creating new person", person);
       fetcher.submit(
-        { name: person.name, email: person.email, phone: person.phone },
+        {
+          name: person.name,
+          email: person.email,
+          phone: person.phone,
+          companyId: person.companyId ?? null,
+        },
         { method: "POST", action: "/people" }
       );
     } else {
       console.log("updating person", person);
       fetcher.submit(
-        { name: person.name, email: person.email, phone: person.phone },
+        {
+          name: person.name,
+          email: person.email,
+          phone: person.phone,
+          companyId: person.companyId ?? null,
+        },
         { method: "PATCH", action: `/people/${person.id}` }
       );
     }
@@ -337,6 +407,7 @@ export default function Index() {
               name: "",
               email: "",
               phone: "",
+              companyId: null,
             })
           }
         >
@@ -347,6 +418,7 @@ export default function Index() {
       {editingPerson && (
         <CreateEditPersonModal
           person={editingPerson}
+          companies={companies}
           onClose={() => setEditingPerson(null)}
           onSave={(updatedPerson) => {
             handleSavePerson(updatedPerson);
