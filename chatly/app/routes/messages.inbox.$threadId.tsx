@@ -31,6 +31,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       createdAt: "desc",
     },
   });
+  const companies = await prisma.company.findMany({
+    where: { ownerId: userId },
+  });
 
   const { threadId } = params;
 
@@ -44,7 +47,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     throw new Error("Unknown thread id");
   }
 
-  return json({ threads, threadId, thread });
+  return json({ threads, threadId, thread, companies });
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -58,6 +61,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       const name = data.get("name");
       const email = data.get("email");
       const phone = data.get("phone");
+      const companyId = data.get("companyId");
 
       if (!personId) {
         throw new Response("Missing person id", { status: 400 });
@@ -76,10 +80,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
           name,
           email,
           phone,
+          companyId: companyId ? parseInt(companyId) : null,
         },
       });
 
-      await updatePersonInLightyear(personId);
+      // await updatePersonInLightyear(personId);
 
       return json({ message: "Updated" }, 200);
     }
@@ -103,6 +108,7 @@ export default function Index() {
     name: string;
     email: string;
     phone: string;
+    companyId: string | null;
   }) => {
     submit(person, { method: "put" });
     toast({ description: "Person updated", duration: 2000 });
@@ -133,11 +139,13 @@ export default function Index() {
       <ChatSidebar
         key={person.id}
         lead={{
-          id: person.id,
+          id: person.id.toString(),
           name: person.name,
           email: person.email,
           phone: person.phone,
+          companyId: person.companyId?.toString() ?? null,
         }}
+        companies={data.companies}
         onSave={handlePersonSave}
       />
     </>
