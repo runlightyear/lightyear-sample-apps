@@ -61,46 +61,51 @@ export function TopNav(props: TopNavProps) {
   };
 
   return (
-    <div className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <ChatlyLogo />
-        <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
-          <MenuItem to="/messages" selected={selected === "messages"}>
-            Messages
-          </MenuItem>
-          <MenuItem to="/people" selected={selected === "people"}>
-            People
-          </MenuItem>
-          <MenuItem to="/companies" selected={selected === "companies"}>
-            Companies
-          </MenuItem>
-          <MenuItem to="/integrations" selected={selected === "integrations"}>
-            Integrations
-          </MenuItem>
-        </nav>
+    <>
+      <div className="border-b fixed top-0 left-0 right-0 z-50 bg-white">
+        <div className="flex h-16 items-center px-4">
+          <ChatlyLogo />
+          <nav className="flex items-center space-x-4 lg:space-x-6 mx-6">
+            <MenuItem to="/messages" selected={selected === "messages"}>
+              Messages
+            </MenuItem>
+            <MenuItem to="/people" selected={selected === "people"}>
+              People
+            </MenuItem>
+            <MenuItem to="/companies" selected={selected === "companies"}>
+              Companies
+            </MenuItem>
+            <MenuItem to="/integrations" selected={selected === "integrations"}>
+              Integrations
+            </MenuItem>
+          </nav>
 
-        <div className="ml-auto flex items-center space-x-4">
-          <Button onClick={handleSync}>Sync</Button>
-          <Input className="w-[350px]" placeholder="Search..." />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="size-9 cursor-pointer">
-                <AvatarFallback className="text-muted-foreground uppercase">
-                  {user.initials}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56">
-              <DropdownMenuLabel>
-                <span className="text-muted-foreground">Logged in as</span>{" "}
-                {user.email}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="ml-auto flex items-center space-x-4">
+            <Button onClick={handleSync}>Sync</Button>
+            <Input className="w-[350px]" placeholder="Search..." />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="size-9 cursor-pointer">
+                  <AvatarFallback className="text-muted-foreground uppercase">
+                    {user.initials}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuLabel>
+                  <span className="text-muted-foreground">Logged in as</span>{" "}
+                  {user.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-    </div>
+      <div className={"h-16 bg-white"} />
+    </>
   );
 }
