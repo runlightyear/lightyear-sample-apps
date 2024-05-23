@@ -7,7 +7,7 @@ export async function sync() {
   await lightyear.syncCollection({
     collection: "crm",
     models: {
-      account: new ModelSynchronizer<any>({
+      account: new ModelSynchronizer({
         list: async () => {
           const companies = await prisma.company.findMany({
             orderBy: {
@@ -72,7 +72,7 @@ export async function sync() {
           });
         },
       }),
-      contact: new ModelSynchronizer<any>({
+      contact: new ModelSynchronizer({
         list: async () => {
           const people = await prisma.person.findMany({
             orderBy: { updatedAt: "asc" },
