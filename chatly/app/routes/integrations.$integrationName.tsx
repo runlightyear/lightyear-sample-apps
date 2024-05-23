@@ -81,20 +81,6 @@ export default function Index() {
             <Button type="submit">Authorize</Button>
           </Form>
         )}
-        {integration.authStatus === "ERROR" && (
-          <Form method="post" reloadDocument>
-            <input type="hidden" name="authorize" value="true" />
-            <input type="hidden" name="integration" value={integration.name} />
-            <input
-              type="hidden"
-              name="customApp"
-              value={integration.customApp}
-            />
-            <Button type="submit" variant={"destructive"}>
-              Reauthorize
-            </Button>
-          </Form>
-        )}
         {integration.authStatus === "AUTHORIZED" && (
           <Form method="post" reloadDocument>
             <input type="hidden" name="deauthorize" value="true" />
@@ -106,6 +92,20 @@ export default function Index() {
             />
             <Button type="submit" variant={"outline"}>
               Deauthorize
+            </Button>
+          </Form>
+        )}
+        {integration.authStatus === "ERROR" && (
+          <Form method="post" reloadDocument>
+            <input type="hidden" name="authorize" value="true" />
+            <input type="hidden" name="integration" value={integration.name} />
+            <input
+              type="hidden"
+              name="customApp"
+              value={integration.customApp}
+            />
+            <Button type="submit" variant={"destructive"}>
+              Reauthorize
             </Button>
           </Form>
         )}
