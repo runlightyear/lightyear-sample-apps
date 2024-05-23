@@ -1,45 +1,44 @@
 import { prisma } from "~/db.server";
-import {
-  LightyearSdk,
-  ModelSync,
-  ObjectMetaData,
-} from "./lightyear-sdk.server";
-import { CrmAccountModel, CrmContactModel } from "./lightyear-types";
-import { Company } from "@prisma/client";
+import { Lightyear, ModelSynchronizer } from "@runlightyear/node";
 
-const lightyear = new LightyearSdk({ apiKey: process.env.LIGHTYEAR_API_KEY! });
+const lightyear = new Lightyear({ apiKey: process.env.LIGHTYEAR_API_KEY! });
 
 export async function sync() {
-  const companyToModel = (
-    company: Company
-  ): ObjectMetaData<CrmAccountModel> => ({
-    id: company.id.toString(),
-    userId: company.ownerId.toString(),
-    updatedAt: company.updatedAt.toISOString(),
-    isDeleted: company.isDeleted,
-    data: {
-      name: company.name,
-      domain: company.domain,
-    },
-  });
-
   await lightyear.syncCollection({
     collection: "crm",
     models: {
-      account: new ModelSync<CrmAccountModel>({
+      account: new ModelSynchronizer<any>({
         list: async () => {
           const companies = await prisma.company.findMany({
             orderBy: {
               updatedAt: "asc",
             },
           });
-          return companies.map((company) => companyToModel(company));
+          return companies.map((company) => ({
+            id: company.id.toString(),
+            userId: company.ownerId.toString(),
+            updatedAt: company.updatedAt.toISOString(),
+            isDeleted: company.isDeleted,
+            data: {
+              name: company.name,
+              domain: company.domain,
+            },
+          }));
         },
         get: async (id) => {
           const company = await prisma.company.findUniqueOrThrow({
             where: { id: parseInt(id) },
           });
-          return companyToModel(company);
+          return {
+            id: company.id.toString(),
+            userId: company.ownerId.toString(),
+            updatedAt: company.updatedAt.toISOString(),
+            isDeleted: company.isDeleted,
+            data: {
+              name: company.name,
+              domain: company.domain,
+            },
+          };
         },
         create: async (object) => {
           const newCompany = await prisma.company.create({
@@ -73,7 +72,7 @@ export async function sync() {
           });
         },
       }),
-      contact: new ModelSync<CrmContactModel>({
+      contact: new ModelSynchronizer<any>({
         list: async () => {
           const people = await prisma.person.findMany({
             orderBy: { updatedAt: "asc" },
@@ -86,8 +85,16 @@ export async function sync() {
             data: {
               firstName: person.name?.split(" ")[0] || null,
               lastName: person.name?.split(" ")[1] || null,
-              primaryEmail: person.email,
-              primaryPhone: person.phone,
+              emailAddresses: [
+                {
+                  address: person.email,
+                },
+              ],
+              phoneNumbers: [
+                {
+                  number: person.phone,
+                },
+              ],
               accountId: person.companyId?.toString() || null,
             },
           }));
@@ -104,8 +111,12 @@ export async function sync() {
             data: {
               firstName: person.name?.split(" ")[0] || null,
               lastName: person.name?.split(" ")[1] || null,
-              primaryEmail: person.email,
-              primaryPhone: person.phone,
+              emailAddresses: {
+                address: person.email,
+              },
+              phoneNumbers: {
+                number: person.phone,
+              },
               accountId: person.companyId?.toString() || null,
             },
           };
@@ -115,8 +126,14 @@ export async function sync() {
             data: {
               ownerId: parseInt(object.userId),
               name: `${object.data.firstName} ${object.data.lastName}`,
-              email: object.data.primaryEmail,
-              phone: object.data.primaryPhone,
+              email:
+                object.data.emailAddresses && object.data.emailAddresses[0]
+                  ? object.data.emailAddresses[0].address
+                  : null,
+              phone:
+                object.data.phoneNumbers && object.data.phoneNumbers[0]
+                  ? object.data.phoneNumbers[0].number
+                  : null,
               companyId: object.data.accountId
                 ? parseInt(object.data.accountId)
                 : null,
@@ -131,8 +148,14 @@ export async function sync() {
             },
             data: {
               name: `${object.data.firstName} ${object.data.lastName}`,
-              email: object.data.primaryEmail,
-              phone: object.data.primaryPhone,
+              email:
+                object.data.emailAddresses && object.data.emailAddresses[0]
+                  ? object.data.emailAddresses[0].address
+                  : null,
+              phone:
+                object.data.phoneNumbers && object.data.phoneNumbers[0]
+                  ? object.data.phoneNumbers[0].number
+                  : null,
               companyId: object.data.accountId
                 ? parseInt(object.data.accountId)
                 : null,
