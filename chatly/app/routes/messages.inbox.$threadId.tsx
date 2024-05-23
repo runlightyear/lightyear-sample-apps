@@ -34,6 +34,9 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   });
   const companies = await prisma.company.findMany({
     where: { ownerId: userId },
+    orderBy: {
+      name: "asc",
+    },
   });
 
   const { threadId } = params;
