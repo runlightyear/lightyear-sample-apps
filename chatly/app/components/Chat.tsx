@@ -40,7 +40,7 @@ export function Chat(props: ChatProps) {
                   message.position === "left" ? "text-left" : "text-right"
                 )}
               >
-                {message.when}
+                {new Date(message.when).toLocaleString()}
               </div>
             </div>
           </div>
