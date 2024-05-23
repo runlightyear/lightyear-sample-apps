@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
-    "@prisma/client": "^5.10.0",
+    "@prisma/client": "^5.14.0",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
@@ -29,6 +29,8 @@
     "@remix-run/node": "^2.6.0",
     "@remix-run/react": "^2.6.0",
     "@remix-run/serve": "^2.6.0",
+    "@runlightyear/cli": "file:../../lightyear/packages/@runlightyear/cli",
+    "@runlightyear/node": "file:../../lightyear/packages/@runlightyear/node",
     "@tanstack/react-table": "^8.16.0",
     "ajv": "^8.13.0",
     "class-variance-authority": "^0.7.0",
