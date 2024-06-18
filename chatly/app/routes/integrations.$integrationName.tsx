@@ -11,6 +11,7 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { useEffect } from "react";
+import { LIGHTYEAR_BASE_URL } from "~/contants";
 import { requireUserId } from "~/session.server";
 
 export const meta: MetaFunction = () => {
@@ -26,7 +27,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const { integrationName } = params;
 
   const response = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}`,
+    `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}?managedUserId=${userId}`,
     {
       headers: {
         Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
@@ -73,11 +74,6 @@ export default function Index() {
           <Form method="post" reloadDocument>
             <input type="hidden" name="authorize" value="true" />
             <input type="hidden" name="integration" value={integration.name} />
-            <input
-              type="hidden"
-              name="customApp"
-              value={integration.customApp}
-            />
             <Button type="submit">Authorize</Button>
           </Form>
         )}
@@ -85,11 +81,6 @@ export default function Index() {
           <Form method="post" reloadDocument>
             <input type="hidden" name="deauthorize" value="true" />
             <input type="hidden" name="integration" value={integration.name} />
-            <input
-              type="hidden"
-              name="customApp"
-              value={integration.customApp}
-            />
             <Button type="submit" variant={"outline"}>
               Deauthorize
             </Button>
@@ -99,11 +90,6 @@ export default function Index() {
           <Form method="post" reloadDocument>
             <input type="hidden" name="authorize" value="true" />
             <input type="hidden" name="integration" value={integration.name} />
-            <input
-              type="hidden"
-              name="customApp"
-              value={integration.customApp}
-            />
             <Button type="submit" variant={"destructive"}>
               Reauthorize
             </Button>
@@ -121,8 +107,9 @@ export const action: ActionFunction = async ({ request }) => {
   const integrationName = formData.get("integration");
 
   if (formData.get("authorize")) {
+    console.log("authorizing");
     const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/authorize`,
+      `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}/authorize`,
       {
         method: "POST",
         headers: {
@@ -130,22 +117,47 @@ export const action: ActionFunction = async ({ request }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          managedUserId: userId.toString(),
           redirectUrl: request.url,
         }),
       }
     );
 
-    return await response.json();
+    if (response.ok) {
+      console.log("received url");
+      return await response.json();
+    } else {
+      const json = await response.json();
+      console.log(json);
+      console.error(response);
+      return { message: "Error" };
+    }
   } else if (formData.get("deauthorize")) {
+    console.log("deauthorizing");
+
     const response = await fetch(
-      `http://localhost:3000/api/v1/envs/dev/integrations/${integrationName}/managed-users/${userId}/deauthorize`,
+      `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}/deauthorize`,
       {
         method: "POST",
         headers: {
           Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          managedUserId: userId.toString(),
+        }),
       }
     );
+
+    if (response.ok) {
+      return { message: "Deauthorized" };
+    } else {
+      const json = await response.json();
+      console.log(json);
+      console.error(response);
+      return { message: "Error" };
+    }
   }
+
   return null;
 };

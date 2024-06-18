@@ -1,7 +1,11 @@
 import { prisma } from "~/db.server";
 import { Lightyear, ModelSynchronizer } from "@runlightyear/node";
+import { LIGHTYEAR_BASE_URL } from "~/contants";
 
-const lightyear = new Lightyear({ apiKey: process.env.LIGHTYEAR_API_KEY! });
+const lightyear = new Lightyear({
+  apiKey: process.env.LIGHTYEAR_API_KEY!,
+  baseUrl: LIGHTYEAR_BASE_URL,
+});
 
 export async function sync() {
   await lightyear.syncCollection({

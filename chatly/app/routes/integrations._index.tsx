@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import type { LoaderFunction, MetaFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import { LIGHTYEAR_BASE_URL } from "~/contants";
 import { requireUser } from "~/session.server";
 
 export const meta: MetaFunction = () => {
@@ -16,7 +17,7 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await requireUser(request);
   const response = await fetch(
-    `http://localhost:3000/api/v1/envs/dev/integrations/managed-users/${user.id}`,
+    `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations?managedUserId=${user.id}`,
     {
       headers: {
         Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
