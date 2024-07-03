@@ -25,7 +25,7 @@ export async function sync() {
             isDeleted: company.isDeleted,
             data: {
               name: company.name,
-              domain: company.domain,
+              website: company.domain,
             },
           }));
         },
@@ -40,7 +40,7 @@ export async function sync() {
             isDeleted: company.isDeleted,
             data: {
               name: company.name,
-              domain: company.domain,
+              website: company.domain,
             },
           };
         },
@@ -49,7 +49,7 @@ export async function sync() {
             data: {
               ownerId: parseInt(object.userId),
               name: object.data.name,
-              domain: object.data.domain,
+              domain: object.data.website,
             },
           });
           return newCompany.id.toString();
@@ -61,7 +61,7 @@ export async function sync() {
             },
             data: {
               name: object.data.name,
-              domain: object.data.domain,
+              domain: object.data.website,
             },
           });
         },
@@ -89,16 +89,8 @@ export async function sync() {
             data: {
               firstName: person.name?.split(" ")[0] || null,
               lastName: person.name?.split(" ")[1] || null,
-              emailAddresses: [
-                {
-                  address: person.email,
-                },
-              ],
-              phoneNumbers: [
-                {
-                  number: person.phone,
-                },
-              ],
+              email: person.email,
+              phone: person.phone,
               accountId: person.companyId?.toString() || null,
             },
           }));
@@ -115,12 +107,8 @@ export async function sync() {
             data: {
               firstName: person.name?.split(" ")[0] || null,
               lastName: person.name?.split(" ")[1] || null,
-              emailAddresses: {
-                address: person.email,
-              },
-              phoneNumbers: {
-                number: person.phone,
-              },
+              email: person.email,
+              phone: person.phone,
               accountId: person.companyId?.toString() || null,
             },
           };
@@ -130,14 +118,8 @@ export async function sync() {
             data: {
               ownerId: parseInt(object.userId),
               name: `${object.data.firstName} ${object.data.lastName}`,
-              email:
-                object.data.emailAddresses && object.data.emailAddresses[0]
-                  ? object.data.emailAddresses[0].address
-                  : null,
-              phone:
-                object.data.phoneNumbers && object.data.phoneNumbers[0]
-                  ? object.data.phoneNumbers[0].number
-                  : null,
+              email: object.data.email,
+              phone: object.data.phone,
               companyId: object.data.accountId
                 ? parseInt(object.data.accountId)
                 : null,
@@ -152,14 +134,8 @@ export async function sync() {
             },
             data: {
               name: `${object.data.firstName} ${object.data.lastName}`,
-              email:
-                object.data.emailAddresses && object.data.emailAddresses[0]
-                  ? object.data.emailAddresses[0].address
-                  : null,
-              phone:
-                object.data.phoneNumbers && object.data.phoneNumbers[0]
-                  ? object.data.phoneNumbers[0].number
-                  : null,
+              email: object.data.email,
+              phone: object.data.phone,
               companyId: object.data.accountId
                 ? parseInt(object.data.accountId)
                 : null,

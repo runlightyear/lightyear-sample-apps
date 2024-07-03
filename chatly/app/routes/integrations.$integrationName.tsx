@@ -6,13 +6,14 @@ import type {
 } from "@remix-run/node";
 import {
   Form,
+  redirect,
   useActionData,
   useFetcher,
   useLoaderData,
 } from "@remix-run/react";
 import { useEffect } from "react";
 import { LIGHTYEAR_BASE_URL } from "~/contants";
-import { requireUserId } from "~/session.server";
+import { requireUser, requireUserId } from "~/session.server";
 
 export const meta: MetaFunction = () => {
   return [
@@ -101,7 +102,7 @@ export default function Index() {
 }
 
 export const action: ActionFunction = async ({ request }) => {
-  const userId = await requireUserId(request);
+  const user = await requireUser(request);
   const formData = await request.formData();
 
   const integrationName = formData.get("integration");
@@ -117,7 +118,8 @@ export const action: ActionFunction = async ({ request }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          managedUserId: userId.toString(),
+          managedUserId: user.id.toString(),
+          displayName: user.email,
           redirectUrl: request.url,
         }),
       }
@@ -144,7 +146,7 @@ export const action: ActionFunction = async ({ request }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          managedUserId: userId.toString(),
+          managedUserId: user.id.toString(),
         }),
       }
     );
