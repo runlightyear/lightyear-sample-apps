@@ -1,4 +1,8 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type {
+  ActionFunctionArgs,
+  LoaderFunctionArgs,
+  MetaFunction,
+} from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import { prisma } from "~/db.server";
 import { useLoaderData } from "@remix-run/react";
@@ -12,6 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+export const meta: MetaFunction = () => {
+  return [{ title: "Chatly | Log in" }];
+};
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const users = await prisma.user.findMany();
@@ -66,7 +74,7 @@ export default function Index() {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit">Login</Button>
+            <Button type="submit">Continue</Button>
           </Form>
         </div>
       </div>

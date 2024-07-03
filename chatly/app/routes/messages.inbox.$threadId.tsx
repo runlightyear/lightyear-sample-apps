@@ -15,7 +15,7 @@ import { sync } from "~/operations/sync.server";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
+    { title: "Chatly | Messages" },
     { name: "description", content: "Welcome to Remix!" },
   ];
 };
