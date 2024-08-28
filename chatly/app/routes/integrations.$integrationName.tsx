@@ -16,10 +16,7 @@ import { LIGHTYEAR_BASE_URL } from "~/contants";
 import { requireUser, requireUserId } from "~/session.server";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
-  ];
+  return [{ title: "Chatly | Integration" }];
 };
 
 export const loader: LoaderFunction = async ({ request, params }) => {
