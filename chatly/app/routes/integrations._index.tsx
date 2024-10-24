@@ -17,7 +17,7 @@ export const meta: MetaFunction = () => {
 export const loader: LoaderFunction = async ({ request }) => {
   const user = await requireUser(request);
   const response = await fetch(
-    `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations?managedUserId=${user.id}`,
+    `${LIGHTYEAR_BASE_URL}/api/v1/envs/${process.env.LIGHTYEAR_ENV}/integrations?managedUserId=${user.id}`,
     {
       headers: {
         Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,

@@ -25,7 +25,7 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   const { integrationName } = params;
 
   const response = await fetch(
-    `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}?managedUserId=${userId}`,
+    `${LIGHTYEAR_BASE_URL}/api/v1/envs/${process.env.LIGHTYEAR_ENV}/integrations/${integrationName}?managedUserId=${userId}`,
     {
       headers: {
         Authorization: `apiKey ${process.env.LIGHTYEAR_API_KEY}`,
@@ -107,7 +107,7 @@ export const action: ActionFunction = async ({ request }) => {
   if (formData.get("authorize")) {
     console.log("authorizing");
     const response = await fetch(
-      `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}/authorize`,
+      `${LIGHTYEAR_BASE_URL}/api/v1/envs/${process.env.LIGHTYEAR_ENV}/integrations/${integrationName}/authorize`,
       {
         method: "POST",
         headers: {
@@ -135,7 +135,7 @@ export const action: ActionFunction = async ({ request }) => {
     console.log("deauthorizing");
 
     const response = await fetch(
-      `${LIGHTYEAR_BASE_URL}/api/v1/envs/dev/integrations/${integrationName}/deauthorize`,
+      `${LIGHTYEAR_BASE_URL}/api/v1/envs/${process.env.LIGHTYEAR_ENV}/integrations/${integrationName}/deauthorize`,
       {
         method: "POST",
         headers: {
